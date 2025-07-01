@@ -60,7 +60,7 @@ def read_input_file(file_path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python deep_crawler_all_links.py <input_file.txt>")
+        print("Usage: python3 csefo.py <input_file.txt>")
         sys.exit(1)
 
     input_file = sys.argv[1]
