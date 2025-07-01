@@ -4,46 +4,45 @@ from bs4 import BeautifulSoup
 import sys
 import time
 
-visited = set()
 headers = {
     "User-Agent": "Mozilla/5.0"
 }
 
 def normalize_url(url):
-    """Remove fragments and trailing slashes for consistency."""
     parsed = urlparse(url)
     return parsed._replace(fragment="").geturl().rstrip('/')
 
 def extract_links(html, base_url):
     soup = BeautifulSoup(html, "html.parser")
-    links = set()
+    links = []
     for tag in soup.find_all("a"):
         href = tag.get("href")
         if href:
-            joined = urljoin(base_url, href.split("#")[0])
-            if base_url in joined:
-                links.add(normalize_url(joined))
+            full_url = urljoin(base_url, href.split("#")[0])
+            if base_url in full_url:
+                links.append(normalize_url(full_url))
     return links
 
 def deep_crawl(start_url):
+    visited = set()
     stack = [normalize_url(start_url)]
-    local_visited = set()
+    all_found_links = []
 
     while stack:
         url = stack.pop()
         if url in visited:
             continue
 
-        print(f"[+] Crawling: {url}")
         visited.add(url)
-        local_visited.add(url)
-
+        print(f"[+] Crawling: {url}")
         try:
             resp = requests.get(url, headers=headers, timeout=5)
             if "text/html" not in resp.headers.get("Content-Type", ""):
                 continue
 
             links = extract_links(resp.text, start_url)
+            all_found_links.extend(links)  # Include duplicates
+
             for link in links:
                 if link not in visited:
                     stack.append(link)
@@ -51,29 +50,29 @@ def deep_crawl(start_url):
         except Exception as e:
             continue
 
-        time.sleep(0.5)  # Be polite
+        time.sleep(0.5)  # Politeness delay
 
-    return local_visited
+    return all_found_links
 
 def read_input_file(file_path):
     with open(file_path, "r") as f:
-        lines = [line.strip() for line in f if line.strip()]
-    return lines
+        return [line.strip() for line in f if line.strip()]
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python deep_crawler.py <input_file.txt>")
+        print("Usage: python deep_crawler_all_links.py <input_file.txt>")
         sys.exit(1)
 
     input_file = sys.argv[1]
-    urls = read_input_file(input_file)
-    all_links = set()
+    root_urls = read_input_file(input_file)
 
-    for root_url in urls:
-        print(f"\n[*] Starting deep crawl for: {root_url}")
-        root_links = deep_crawl(root_url)
-        all_links.update(root_links)
+    final_links = []
 
-    print(f"\n[+] Total unique links found: {len(all_links)}\n")
-    for link in sorted(all_links):
+    for root in root_urls:
+        print(f"\n[*] Starting deep crawl for: {root}")
+        links = deep_crawl(root)
+        final_links.extend(links)
+
+    print(f"\n[+] Total links found (with duplicates): {len(final_links)}\n")
+    for link in final_links:
         print(link)
