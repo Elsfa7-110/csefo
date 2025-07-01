@@ -52,7 +52,7 @@ def extract_root(url):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python crawler_with_wayback.py <input_links_file.txt>")
+        print("Usage: python csefo.py <input_links_file.txt>")
         sys.exit(1)
 
     input_file = sys.argv[1]
