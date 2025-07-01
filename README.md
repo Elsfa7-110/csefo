@@ -1,3 +1,3 @@
-# wayback and crawl
+# crawl deep
 
-python3 cr.py file
+python3 csefo.py file
