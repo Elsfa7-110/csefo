@@ -1,5 +1,5 @@
 # crawl deep and unique links
 
-csefo crawling and spidering framework. 
+csefo crawling and spidering
 
 python3 csefo.py file
