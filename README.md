@@ -13,4 +13,4 @@ csefo crawling and spidering and vulnerability checks (e.g. XSS, open redirect, 
 
 
 # to run >>
-python3 csefo.py file
+python3 csefo.py targets.txt 5
