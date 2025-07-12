@@ -6,100 +6,138 @@ import time
 import random
 import os
 import pyfiglet
+import threading
 
-# Matrix-style ASCII banner for ELSFA7-110
-def matrix_effect_banner(name):
-    green = "\033[92m"
+# Banner displaying ELSFA7-110 in "gold" with matrix effect
+def gold_banner(name):
+    yellow = "\033[93m"
     reset = "\033[0m"
-    os.system('cls' if os.name == 'nt' else 'clear')  # Clear terminal
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-    # Matrix background animation
-    for _ in range(5):
-        line = ''.join(random.choice(['0', '1', ' ']) for _ in range(70))
-        print(green + line + reset)
+    # Matrix-like effect
+    for _ in range(4):
+        line = ''.join(random.choice(['$', '*', ' ', '.', ':']) for _ in range(70))
+        print(yellow + line + reset)
         time.sleep(0.05)
 
-    # Big name banner
-    ascii_banner = pyfiglet.figlet_format(name)
-    print(green + ascii_banner + reset)
+    # PyFiglet-style ASCII art
+    banner = pyfiglet.figlet_format(name)
+    print(yellow + banner + reset)
 
-    # Matrix background animation
-    for _ in range(5):
-        line = ''.join(random.choice(['0', '1', ' ']) for _ in range(70))
-        print(green + line + reset)
+    for _ in range(4):
+        line = ''.join(random.choice(['$', '*', ' ', '.', ':']) for _ in range(70))
+        print(yellow + line + reset)
         time.sleep(0.05)
     print()
 
-matrix_effect_banner("ELSFA7-110")
+gold_banner("ELSFA7-110")
 
 headers = {
-    "User-Agent": "Mozilla/5.0"
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"
 }
 
+# Normalize URLs (remove fragment and ensure trailing slash)
 def normalize_url(url):
     parsed = urlparse(url)
     return parsed._replace(fragment="").geturl().rstrip('/')
 
+# Extract links from HTML content
 def extract_links(html, base_url):
     soup = BeautifulSoup(html, "html.parser")
-    links = []
-    for tag in soup.find_all("a"):
+    links = set()
+    for tag in soup.find_all("a", href=True):
         href = tag.get("href")
-        if href:
-            full_url = urljoin(base_url, href.split("#")[0])
-            if base_url in full_url:
-                links.append(normalize_url(full_url))
+        full_url = urljoin(base_url, href.split("#")[0])
+        if base_url in full_url:
+            links.add(normalize_url(full_url))
     return links
 
-def deep_crawl(start_url):
-    visited = set()
-    stack = [normalize_url(start_url)]
-    all_found_links = set()
+# Simple vulnerability scan: checking for XSS, open redirects, and SQL injection
+def scan_vulnerabilities(url, html):
+    vulnerabilities = []
+    
+    # Check for potential XSS
+    if "<script>" in html or "javascript:" in html:
+        vulnerabilities.append("Potential XSS vulnerability detected.")
+    
+    # Check for open redirects
+    if "redirect" in url or "url=" in url:
+        vulnerabilities.append("Potential open redirect detected.")
+    
+    # Check for SQL Injection risk
+    if "' OR 1=1 --" in url or "'; DROP TABLE" in url:
+        vulnerabilities.append("Potential SQL Injection vulnerability detected.")
+    
+    return vulnerabilities
 
-    while stack:
-        url = stack.pop()
-        if url in visited:
+# Crawl a website recursively with threading and depth limit
+def deep_crawl(start_url, depth_limit, visited, to_visit, found_links):
+    base_url = normalize_url(start_url)
+    visited.add(base_url)
+    
+    while to_visit:
+        url = to_visit.pop()
+        if url in visited or len(visited) > depth_limit:
             continue
 
         visited.add(url)
         print(f"{url}")
+
         try:
-            resp = requests.get(url, headers=headers, timeout=5)
-            if "text/html" not in resp.headers.get("Content-Type", ""):
+            response = requests.get(url, headers=headers, timeout=10)
+            if "text/html" not in response.headers.get("Content-Type", ""):
                 continue
 
-            links = extract_links(resp.text, start_url)
-            for link in links:
-                if link not in visited:
-                    stack.append(link)
-                all_found_links.add(link)
+            # Scan for vulnerabilities
+            vulnerabilities = scan_vulnerabilities(url, response.text)
+            if vulnerabilities:
+                print(f"[!] Vulnerabilities found at {url}: {', '.join(vulnerabilities)}")
+            
+            links = extract_links(response.text, base_url)
+            new_links = links - visited
+            to_visit.extend(new_links)
+            found_links.update(links)
 
-        except Exception as e:
+        except requests.RequestException as e:
+            print(f"[!] Failed: {url} ({e})")
             continue
 
-        time.sleep(0.5)
+        time.sleep(0.3)  # Politeness delay
 
-    return list(all_found_links)
-
+# Read the input file (URLs to start the crawl)
 def read_input_file(file_path):
     with open(file_path, "r") as f:
         return [line.strip() for line in f if line.strip()]
 
+# Threading for concurrent crawling
+def threaded_crawl(start_url, depth_limit, visited, to_visit, found_links):
+    thread = threading.Thread(target=deep_crawl, args=(start_url, depth_limit, visited, to_visit, found_links))
+    thread.start()
+    thread.join()
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 csefo.py <input_file.txt>")
+    if len(sys.argv) != 3:
+        print("Usage: python3 deep_gold_crawler_with_vuln_scan.py <input_file.txt> <depth_limit>")
         sys.exit(1)
 
     input_file = sys.argv[1]
+    depth_limit = int(sys.argv[2])  # Set depth limit for crawl
     root_urls = read_input_file(input_file)
 
-    final_links = set()
+    visited = set()
+    to_visit = []
+    found_links = set()
 
-    for root in root_urls:
-        print(f"\n[*] Starting deep crawl for: {root}")
-        links = deep_crawl(root)
-        final_links.update(links)
+    for root_url in root_urls:
+        print(f"\n[*] Starting deep crawl for: {root_url} with depth limit {depth_limit}")
+        to_visit.append(root_url)
+        threaded_crawl(root_url, depth_limit, visited, to_visit, found_links)
 
-    print(f"\n[+] Total unique links found: {len(final_links)}\n")
-    for link in sorted(final_links):
-        print(link)
+    print(f"\n[✓] Total unique links found: {len(found_links)}\n")
+
+    # Write to output file
+    with open("found_links.txt", "w") as f:
+        for link in found_links:
+            f.write(link + "\n")
+
+    print(f"[✓] Links saved to 'found_links.txt'.")
