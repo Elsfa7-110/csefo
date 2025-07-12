@@ -8,4 +8,4 @@ csefo crawling and spidering
 
 
 # to run >>
-python3 csefo.py targets.txt 5
+python3 csefo.py targets.txt
