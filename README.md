@@ -1,7 +1,6 @@
 # crawl deep and unique links
 
-csefo crawling and spidering and vulnerability checks (e.g. XSS, open redirect, etc)
-
+csefo crawling and spidering
 
     Deep crawling – now the crawler will follow all internal links recursively and deeply.
 
