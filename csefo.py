@@ -5,23 +5,32 @@ import sys
 import time
 import random
 import os
+import pyfiglet
 
-# Matrix-style display of creator name
-def matrix_effect(text):
+# Matrix-style ASCII banner for ELSFA7-110
+def matrix_effect_banner(name):
     green = "\033[92m"
     reset = "\033[0m"
-    for _ in range(3):  # Run multiple lines for matrix vibe
-        line = ''.join(random.choice(['0', '1', ' ']) for _ in range(60))
+    os.system('cls' if os.name == 'nt' else 'clear')  # Clear terminal
+
+    # Matrix background animation
+    for _ in range(5):
+        line = ''.join(random.choice(['0', '1', ' ']) for _ in range(70))
         print(green + line + reset)
         time.sleep(0.05)
-    print(green + f"### Coded by: {text} ###" + reset)
-    for _ in range(3):
-        line = ''.join(random.choice(['0', '1', ' ']) for _ in range(60))
+
+    # Big name banner
+    ascii_banner = pyfiglet.figlet_format(name)
+    print(green + ascii_banner + reset)
+
+    # Matrix background animation
+    for _ in range(5):
+        line = ''.join(random.choice(['0', '1', ' ']) for _ in range(70))
         print(green + line + reset)
         time.sleep(0.05)
     print()
 
-matrix_effect("ELSFA7-110")
+matrix_effect_banner("ELSFA7-110")
 
 headers = {
     "User-Agent": "Mozilla/5.0"
@@ -45,7 +54,7 @@ def extract_links(html, base_url):
 def deep_crawl(start_url):
     visited = set()
     stack = [normalize_url(start_url)]
-    all_found_links = set()  # Use set to auto-remove duplicates
+    all_found_links = set()
 
     while stack:
         url = stack.pop()
@@ -53,7 +62,7 @@ def deep_crawl(start_url):
             continue
 
         visited.add(url)
-        print(f"[+] Crawling: {url}")
+        print(f"{url}")
         try:
             resp = requests.get(url, headers=headers, timeout=5)
             if "text/html" not in resp.headers.get("Content-Type", ""):
