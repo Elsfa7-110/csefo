@@ -13,7 +13,4 @@ csefo crawling and spidering and vulnerability checks (e.g. XSS, open redirect, 
 
 
 # to run >>
-
-pip3 install pyfiglet
-
 python3 csefo.py file
